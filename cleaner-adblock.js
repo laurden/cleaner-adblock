@@ -14,6 +14,20 @@ const CONCURRENCY = 12; // Number of concurrent checks
 const DEAD_DOMAINS_FILE = 'dead_domains.txt';
 const REDIRECT_DOMAINS_FILE = 'redirect_domains.txt';
 
+// Ignored Domains - domains to skip checking (add domains that are incorrectly flagged)
+// These domains will be completely skipped during scanning
+const IGNORED_DOMAINS = [
+  // Add domains here that should be ignored, one per line
+  // Examples:
+  // 'example.com',
+  'aliexpress.us',
+  'golfdigest.com',
+  'm.economictimes.com',
+  'twitter.com',
+  'testpages.adblockplus.org',
+  'timesofindia.com'
+];
+
 // Custom User Agent - Chrome on Windows
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
@@ -86,6 +100,17 @@ Options:
   --test-count=N    Only test first N domains (enables test mode)
   --help, -h        Show this help message
 
+Ignored Domains:
+  You can add domains to the IGNORED_DOMAINS array in the script to skip them.
+  These domains won't be checked and won't appear in any output files.
+  Useful for domains that are incorrectly flagged as dead or redirect.
+  
+  Edit the script and add domains to the IGNORED_DOMAINS array:
+    const IGNORED_DOMAINS = [
+      'example.com',
+      'false-positive.net',
+    ];
+
 Examples:
   node cleanup-site-debug.js
   node cleanup-site-debug.js --input=my_rules.txt
@@ -149,6 +174,7 @@ Configuration:
   - Page load timeout: ${TIMEOUT / 1000}s
   - Force-close timeout: ${FORCE_CLOSE_TIMEOUT / 1000}s
   - Concurrent checks: ${CONCURRENCY}
+  - Ignored domains: ${IGNORED_DOMAINS.length} (edit IGNORED_DOMAINS array in script)
 `);
   process.exit(0);
 }
@@ -783,6 +809,21 @@ function writeRedirectDomains(redirectDomains) {
   }
   
   console.log(`Found ${domains.length} unique domains to check\n`);
+  
+  // Filter out ignored domains
+  if (IGNORED_DOMAINS.length > 0) {
+    const beforeCount = domains.length;
+    domains = domains.filter(domain => !IGNORED_DOMAINS.includes(domain));
+    const ignoredCount = beforeCount - domains.length;
+    if (ignoredCount > 0) {
+      console.log(`Ignored ${ignoredCount} domain(s) from IGNORED_DOMAINS list`);
+      if (DEBUG) {
+        const ignored = IGNORED_DOMAINS.filter(d => beforeCount > domains.length);
+        console.log(`Ignored domains: ${ignored.join(', ')}`);
+      }
+      console.log(`Remaining domains to check: ${domains.length}\n`);
+    }
+  }
   
   // Apply test mode if enabled
   if (TEST_MODE && domains.length > TEST_COUNT) {
