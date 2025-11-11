@@ -1,0 +1,25 @@
+# ever seen a grown engineer go pale? they just found their .pp(k) in a git log
+**/.ppk/*
+**/.ssh/*
+# ssh and tell no one
+
+# build, coverage and dependencies, etc
+backup/
+build/
+coverage/
+node_modules/
+
+# database, envpocalypse, init. configuration, logs and desktop services store
+*.db
+.env
+*.ini
+*.log
+.DS_Store
+
+# editor settings (don't tell your boss you use vscode)
+.vscode/
+
+# clean-adblock files
+dead_domains.txt
+easylist_specific_hide.txt
+redirect_domains.txt
