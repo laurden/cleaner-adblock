@@ -1,0 +1,17 @@
+{
+	"inputFile": "test-input.txt",
+	"outputFormat": "text",
+	"addWww": false,
+	"ignoreSimilar": false,
+	"timeout": 15,
+	"forceCloseTimeout": 30,
+	"concurrency": 4,
+	"debug": false,
+	"includeTimestamp": true,
+	"outputStatistics": false,
+	"quietMode": false,
+	"disableSandbox": false,
+	"httpsOnly": false,
+	"maxRequestsPerMinute": 600,
+	"maxDomains": 100000
+}

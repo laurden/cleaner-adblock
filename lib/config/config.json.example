@@ -1,0 +1,20 @@
+{
+	"inputFile": "example-list.txt",
+	"outputFormat": "text",
+	"addWww": false,
+	"ignoreSimilar": false,
+	"timeout": 15,
+	"forceCloseTimeout": 15,
+	"concurrency": 10,
+	"debug": false,
+	"debugVerbose": false,
+	"debugNetwork": false,
+	"debugBrowser": false,
+	"includeTimestamp": false,
+	"outputStatistics": true,
+	"quietMode": false,
+	"disableSandbox": false,
+	"httpsOnly": false,
+	"maxRequestsPerMinute": 300,
+	"maxDomains": 100000
+}

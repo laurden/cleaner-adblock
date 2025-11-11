@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { parseDomainsFromFile } = require('../../src/parsers/fileReader');
+const { parseDomainsFromFile } = require('../../lib/parsers/fileReader');
 
 // Test fixtures directory
 const fixturesDir = path.join(__dirname, '..', 'fixtures');

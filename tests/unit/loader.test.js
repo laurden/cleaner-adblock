@@ -11,9 +11,8 @@ const path = require('path');
 
 describe('Configuration Loader', () => {
 	// Store original require cache
-	const configLoaderPath = path.join(__dirname, '../../src/config/loader.js');
-	const configPath = path.join(__dirname, '../../src/config/config.js');
-	const configExamplePath = path.join(__dirname, '../../src/config/config.js.example');
+	const configLoaderPath = path.join(__dirname, '../../lib/config/loader.js');
+	const configPath = path.join(__dirname, '../../lib/config/config.json');
 
 	beforeEach(() => {
 		// Clear require cache before each test
@@ -23,8 +22,8 @@ describe('Configuration Loader', () => {
 
 	describe('loadConfig', () => {
 		test('should load and merge config with defaults', async () => {
-			// Since config.js should exist in the project
-			const { loadConfig } = require('../../src/config/loader');
+			// Config.js exists at src/config/config.js
+			const { loadConfig } = require('../../lib/config/loader');
 			const config = await loadConfig();
 
 			// Should have properties from defaults
@@ -36,25 +35,19 @@ describe('Configuration Loader', () => {
 			expect(typeof config).toBe('object');
 		});
 
-		test('should throw error if config.js does not exist and example exists', async () => {
-			// This test assumes config.js might not exist in some scenarios
-			// We'll skip this test if config.js exists
-			try {
-				await fs.promises.access(configPath);
-				// Config exists, skip this test
-				expect(true).toBe(true);
-			} catch {
-				// Config doesn't exist, test error handling
-				const { loadConfig } = require('../../src/config/loader');
+		test('should load config from src/config directory', async () => {
+			// Config is in src/config/config.json (or defaults if not present)
+			const { loadConfig } = require('../../lib/config/loader');
+			const config = await loadConfig();
 
-				await expect(loadConfig()).rejects.toThrow('Configuration required');
-				await expect(loadConfig()).rejects.toThrow('config.js.example');
-			}
+			// Should successfully load
+			expect(config).toBeDefined();
+			expect(typeof config).toBe('object');
 		});
 
 		test('should merge user config with defaults', async () => {
-			const { loadConfig } = require('../../src/config/loader');
-			const defaults = require('../../src/config/defaults');
+			const { loadConfig } = require('../../lib/config/loader');
+			const defaults = require('../../lib/config/defaults');
 			const config = await loadConfig();
 
 			// Should have default values
@@ -66,7 +59,7 @@ describe('Configuration Loader', () => {
 		});
 
 		test('should have all required default properties', async () => {
-			const { loadConfig } = require('../../src/config/loader');
+			const { loadConfig } = require('../../lib/config/loader');
 			const config = await loadConfig();
 
 			// Check for all critical properties
@@ -82,8 +75,7 @@ describe('Configuration Loader', () => {
 		});
 
 		test('should have correct default values', async () => {
-			const { loadConfig } = require('../../src/config/loader');
-			const defaults = require('../../src/config/defaults');
+			const { loadConfig } = require('../../lib/config/loader');
 			const config = await loadConfig();
 
 			// Verify timeout is reasonable
@@ -101,7 +93,7 @@ describe('Configuration Loader', () => {
 		});
 
 		test('should load config without throwing errors', async () => {
-			const { loadConfig } = require('../../src/config/loader');
+			const { loadConfig } = require('../../lib/config/loader');
 
 			await expect(loadConfig()).resolves.toBeDefined();
 		});
@@ -110,13 +102,91 @@ describe('Configuration Loader', () => {
 			// Clear cache
 			delete require.cache[configLoaderPath];
 
-			const { loadConfig } = require('../../src/config/loader');
+			const { loadConfig } = require('../../lib/config/loader');
 
 			const config1 = await loadConfig();
 			const config2 = await loadConfig();
 
 			// Should return same structure (values might differ if config changed)
 			expect(Object.keys(config1).sort()).toEqual(Object.keys(config2).sort());
+		});
+
+		test('should load custom config file when path is provided', async () => {
+			// Create a temporary custom config file
+			const customConfigDir = path.join(__dirname, '..', 'fixtures', 'custom-config');
+			const customConfigPath = path.join(customConfigDir, 'custom-config.json');
+
+			await fs.promises.mkdir(customConfigDir, { recursive: true });
+
+			const customConfig = {
+				inputFile: 'custom-input.txt',
+				testMode: true,
+				addWww: true,
+				concurrency: 20,
+				timeout: 15,
+				forceCloseTimeout: 30,
+				outputFormat: 'text',
+			};
+
+			await fs.promises.writeFile(customConfigPath, JSON.stringify(customConfig, null, '\t'), 'utf8');
+
+			try {
+				const { loadConfig } = require('../../lib/config/loader');
+				const config = await loadConfig(customConfigPath);
+
+				// Should have custom values
+				expect(config.inputFile).toBe('custom-input.txt');
+				expect(config.testMode).toBe(true);
+				expect(config.addWww).toBe(true);
+				expect(config.concurrency).toBe(20);
+
+				// Should still have default values for unspecified properties
+				expect(config).toHaveProperty('FORCE_CLOSE_TIMEOUT');
+				expect(config).toHaveProperty('MAX_FILE_SIZE');
+			} finally {
+				// Clean up
+				await fs.promises.unlink(customConfigPath).catch(() => {});
+				await fs.promises.rmdir(customConfigDir).catch(() => {});
+			}
+		});
+
+		test('should throw error when custom config file does not exist', async () => {
+			const { loadConfig } = require('../../lib/config/loader');
+			const nonExistentPath = 'tests/fixtures/nonexistent/config.json';
+
+			await expect(loadConfig(nonExistentPath)).rejects.toThrow(/Configuration file not found|ENOENT/);
+		});
+
+		test('should resolve relative custom config paths', async () => {
+			// Create a temporary custom config file
+			const customConfigDir = path.join(__dirname, '..', 'fixtures', 'relative-config');
+			const customConfigPath = path.join(customConfigDir, 'relative-config.json');
+
+			await fs.promises.mkdir(customConfigDir, { recursive: true });
+
+			const customConfig = {
+				inputFile: 'relative-input.txt',
+				outputFormat: 'text',
+				timeout: 15,
+				forceCloseTimeout: 30,
+				concurrency: 4,
+			};
+
+			await fs.promises.writeFile(customConfigPath, JSON.stringify(customConfig, null, '\t'), 'utf8');
+
+			try {
+				const { loadConfig } = require('../../lib/config/loader');
+
+				// Use relative path from project root
+				const relativePath = path.relative(process.cwd(), customConfigPath);
+				const config = await loadConfig(relativePath);
+
+				expect(config.inputFile).toBe('relative-input.txt');
+			} finally {
+				// Clean up
+				await fs.promises.unlink(customConfigPath).catch(() => {});
+				await fs.promises.rmdir(customConfigDir).catch(() => {});
+			}
 		});
 	});
 });

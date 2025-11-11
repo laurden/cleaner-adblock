@@ -10,7 +10,7 @@ const {
 	writeRedirectDomainsText,
 	writeDomainsJSON,
 	writeDomainsCSV,
-} = require('../../src/writers/formatWriters');
+} = require('../../lib/writers/formatWriters');
 
 // Test output directory
 const testOutputDir = path.join(__dirname, '..', 'fixtures', 'test-output');
@@ -28,7 +28,7 @@ afterEach(async () => {
 		for (const file of files) {
 			await fs.promises.unlink(path.join(testOutputDir, file));
 		}
-	} catch (e) {
+	} catch {
 		// Directory might not exist or be empty
 	}
 });
@@ -37,7 +37,7 @@ afterAll(async () => {
 	// Remove test output directory
 	try {
 		await fs.promises.rmdir(testOutputDir);
-	} catch (e) {
+	} catch {
 		// Directory might not be empty
 	}
 });

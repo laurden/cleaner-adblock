@@ -13,6 +13,6 @@
 		"moduleResolution": "node",
 		"resolveJsonModule": true
 	},
-	"include": ["*.js", "build/**/*"],
-	"exclude": ["backup", "build", "coverage", "node_modules"]
+	"include": ["*.js", "lib/**/*.js", "tests/**/*.js"],
+	"exclude": ["node_modules", "tests"]
 }

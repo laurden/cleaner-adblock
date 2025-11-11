@@ -2,7 +2,7 @@
  * Unit tests for logger utilities
  */
 
-const { configure, debugLog, debugVerbose, debugNetwork, debugBrowser, truncateError } = require('../../src/utils/logger');
+const { configure, debugLog, debugVerbose, debugNetwork, debugBrowser, truncateError } = require('../../lib/utils/logger');
 
 // Mock console.log to capture output
 let consoleOutput = [];

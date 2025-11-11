@@ -4,11 +4,11 @@
 
 const path = require('path');
 const fs = require('fs');
-const { parseArgs, showHelp } = require('../../src/cli');
+const { parseArgs, showHelp } = require('../../lib/cli');
 
 // Create a temporary test config file
 const testConfigDir = path.join(__dirname, '..', 'fixtures', 'test-config');
-const testConfigPath = path.join(testConfigDir, 'config.js');
+const testConfigPath = path.join(testConfigDir, 'config.json');
 
 // Mock console.log and console.error
 let consoleOutput = [];
@@ -21,21 +21,29 @@ beforeAll(async () => {
 	// Create test config directory
 	await fs.promises.mkdir(testConfigDir, { recursive: true });
 
-	// Create a test config file
-	const testConfig = `module.exports = {
-	inputFile: 'test-input.txt',
-	testMode: false,
-	addWww: false,
-	ignoreSimilar: false,
-	progressBar: false,
-	quietMode: false,
-	debug: false,
-	debugVerbose: false,
-	debugNetwork: false,
-	debugBrowser: false,
-};`;
+	// Create a test config file (JSON format)
+	const testConfig = {
+		inputFile: 'test-input.txt',
+		outputFormat: 'text',
+		addWww: false,
+		ignoreSimilar: false,
+		quietMode: false,
+		debug: false,
+		debugVerbose: false,
+		debugNetwork: false,
+		debugBrowser: false,
+		timeout: 15,
+		forceCloseTimeout: 30,
+		concurrency: 4,
+		includeTimestamp: true,
+		outputStatistics: false,
+		disableSandbox: false,
+		httpsOnly: false,
+		maxRequestsPerMinute: 600,
+		maxDomains: 100000,
+	};
 
-	await fs.promises.writeFile(testConfigPath, testConfig, 'utf8');
+	await fs.promises.writeFile(testConfigPath, JSON.stringify(testConfig, null, '\t'), 'utf8');
 });
 
 afterAll(async () => {
@@ -43,7 +51,7 @@ afterAll(async () => {
 	try {
 		await fs.promises.unlink(testConfigPath);
 		await fs.promises.rmdir(testConfigDir);
-	} catch (e) {
+	} catch {
 		// Ignore cleanup errors
 	}
 });
@@ -68,14 +76,23 @@ afterEach(() => {
 
 describe('CLI Argument Parsing', () => {
 	describe('parseArgs', () => {
-		test('should load config file (custom config path not yet implemented)', async () => {
-			// NOTE: loadConfig() doesn't actually support custom paths yet
-			// This test verifies current behavior
+		test('should load custom config file with --config flag', async () => {
 			const args = [`--config=${testConfigPath}`];
 			const config = await parseArgs(args);
 
-			// Should load default config (custom config not supported yet)
+			// Should load custom config file
 			expect(config).toHaveProperty('inputFile');
+			expect(config.inputFile).toBe('test-input.txt'); // From test config
+		});
+
+		test('should exit with error for non-existent custom config file', async () => {
+			const args = ['--config=tests/fixtures/nonexistent/config.json'];
+
+			await parseArgs(args);
+
+			expect(consoleErrors.length).toBeGreaterThan(0);
+			expect(consoleErrors[0]).toMatch(/Configuration file not found|ENOENT/);
+			expect(process.exit).toHaveBeenCalledWith(1);
 		});
 
 		test('should override config with --input flag', async () => {
@@ -99,45 +116,103 @@ describe('CLI Argument Parsing', () => {
 			expect(config.ignoreSimilar).toBe(true);
 		});
 
-		test('should enable debug with --debug flag', async () => {
+		test('should enable basic debug with --debug flag', async () => {
 			const args = [`--config=${testConfigPath}`, '--debug'];
 			const config = await parseArgs(args);
 
 			expect(config.debug).toBe(true);
+			expect(config.debugVerbose).toBeFalsy();
+			expect(config.debugNetwork).toBeFalsy();
+			expect(config.debugBrowser).toBeFalsy();
 		});
 
-		test('should enable debugVerbose with --debug-verbose flag', async () => {
-			const args = [`--config=${testConfigPath}`, '--debug-verbose'];
+		test('should enable basic debug with --debug=basic flag', async () => {
+			const args = [`--config=${testConfigPath}`, '--debug=basic'];
+			const config = await parseArgs(args);
+
+			expect(config.debug).toBe(true);
+			expect(config.debugVerbose).toBeFalsy();
+			expect(config.debugNetwork).toBeFalsy();
+			expect(config.debugBrowser).toBeFalsy();
+		});
+
+		test('should enable verbose debug with --debug=verbose flag', async () => {
+			const args = [`--config=${testConfigPath}`, '--debug=verbose'];
 			const config = await parseArgs(args);
 
 			expect(config.debug).toBe(true);
 			expect(config.debugVerbose).toBe(true);
+			expect(config.debugNetwork).toBeFalsy();
+			expect(config.debugBrowser).toBeFalsy();
 		});
 
-		test('should enable debugNetwork with --debug-network flag', async () => {
-			const args = [`--config=${testConfigPath}`, '--debug-network'];
+		test('should enable network debug with --debug=network flag', async () => {
+			const args = [`--config=${testConfigPath}`, '--debug=network'];
 			const config = await parseArgs(args);
 
 			expect(config.debug).toBe(true);
+			expect(config.debugVerbose).toBeFalsy();
 			expect(config.debugNetwork).toBe(true);
+			expect(config.debugBrowser).toBeFalsy();
 		});
 
-		test('should enable debugBrowser with --debug-browser flag', async () => {
-			const args = [`--config=${testConfigPath}`, '--debug-browser'];
+		test('should enable browser debug with --debug=browser flag', async () => {
+			const args = [`--config=${testConfigPath}`, '--debug=browser'];
 			const config = await parseArgs(args);
 
 			expect(config.debug).toBe(true);
+			expect(config.debugVerbose).toBeFalsy();
+			expect(config.debugNetwork).toBeFalsy();
 			expect(config.debugBrowser).toBe(true);
 		});
 
-		test('should enable all debug flags with --debug-all flag', async () => {
-			const args = [`--config=${testConfigPath}`, '--debug-all'];
+		test('should enable all debug flags with --debug=all flag', async () => {
+			const args = [`--config=${testConfigPath}`, '--debug=all'];
 			const config = await parseArgs(args);
 
 			expect(config.debug).toBe(true);
 			expect(config.debugVerbose).toBe(true);
 			expect(config.debugNetwork).toBe(true);
 			expect(config.debugBrowser).toBe(true);
+		});
+
+		test('should enable multiple debug types with comma-separated values', async () => {
+			const args = [`--config=${testConfigPath}`, '--debug=basic,verbose'];
+			const config = await parseArgs(args);
+
+			expect(config.debug).toBe(true);
+			expect(config.debugVerbose).toBe(true);
+			expect(config.debugNetwork).toBeFalsy();
+			expect(config.debugBrowser).toBeFalsy();
+		});
+
+		test('should enable multiple debug types with --debug=verbose,network', async () => {
+			const args = [`--config=${testConfigPath}`, '--debug=verbose,network'];
+			const config = await parseArgs(args);
+
+			expect(config.debug).toBe(true);
+			expect(config.debugVerbose).toBe(true);
+			expect(config.debugNetwork).toBe(true);
+			expect(config.debugBrowser).toBeFalsy();
+		});
+
+		test('should exit with error for invalid debug type', async () => {
+			const args = [`--config=${testConfigPath}`, '--debug=invalid'];
+
+			await parseArgs(args);
+
+			expect(consoleErrors.length).toBeGreaterThan(0);
+			expect(consoleErrors[0]).toContain('Invalid debug type');
+			expect(process.exit).toHaveBeenCalledWith(1);
+		});
+
+		test('should handle case-insensitive debug types', async () => {
+			const args = [`--config=${testConfigPath}`, '--debug=VERBOSE,Network'];
+			const config = await parseArgs(args);
+
+			expect(config.debug).toBe(true);
+			expect(config.debugVerbose).toBe(true);
+			expect(config.debugNetwork).toBe(true);
 		});
 
 		test('should enable testMode with --test-mode flag', async () => {
@@ -160,13 +235,6 @@ describe('CLI Argument Parsing', () => {
 			const config = await parseArgs(args);
 
 			expect(config.timeout).toBe(60000); // Converted to milliseconds
-		});
-
-		test('should enable progressBar with --progress-bar flag', async () => {
-			const args = [`--config=${testConfigPath}`, '--progress-bar'];
-			const config = await parseArgs(args);
-
-			expect(config.progressBar).toBe(true);
 		});
 
 		test('should enable quietMode with --quiet flag', async () => {
@@ -252,7 +320,7 @@ describe('CLI Argument Parsing', () => {
 			expect(consoleOutput.length).toBeGreaterThan(0);
 			const helpText = consoleOutput.join('\n');
 
-			expect(helpText).toContain('Minimal Domain Scanner');
+			expect(helpText).toContain('Cleaner AdBlock');
 			expect(helpText).toContain('Usage:');
 			expect(helpText).toContain('Options:');
 			expect(helpText).toContain('--input=');
@@ -269,17 +337,6 @@ describe('CLI Argument Parsing', () => {
 
 			expect(helpText).toContain('Examples:');
 			expect(helpText).toContain('node cleaner-adblock.js');
-		});
-
-		test('should include supported rule types in help message', () => {
-			showHelp();
-
-			const helpText = consoleOutput.join('\n');
-
-			expect(helpText).toContain('Supported Rule Types:');
-			expect(helpText).toContain('Cosmetic/Element Hiding');
-			expect(helpText).toContain('Adguard Rules');
-			expect(helpText).toContain('Network Rules');
 		});
 	});
 });

@@ -5,9 +5,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const { parseDomainsFromFile } = require('../../src/parsers/fileReader');
-const { expandDomainsWithWww } = require('../../src/checkers/variants/wwwHandler');
-const { writeDomains } = require('../../src/writers/formatWriters');
+const { parseDomainsFromFile } = require('../../lib/parsers/fileReader');
+const { expandDomainsWithWww } = require('../../lib/checkers/variants/wwwHandler');
+const { writeDomains } = require('../../lib/writers/formatWriters');
 
 // Test fixtures
 const fixturesDir = path.join(__dirname, '..', 'fixtures');
@@ -25,7 +25,7 @@ afterEach(async () => {
 		for (const file of files) {
 			await fs.promises.unlink(path.join(outputDir, file));
 		}
-	} catch (e) {
+	} catch {
 		// Ignore errors
 	}
 });
@@ -34,7 +34,7 @@ afterAll(async () => {
 	// Remove output directory
 	try {
 		await fs.promises.rmdir(outputDir);
-	} catch (e) {
+	} catch {
 		// Ignore errors
 	}
 });

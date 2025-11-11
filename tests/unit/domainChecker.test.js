@@ -3,7 +3,7 @@
  * NOTE: These are BASIC tests only - no Puppeteer/liveness detection testing
  */
 
-const { isSimilarDomainRedirect } = require('../../src/checkers/domainChecker');
+const { isSimilarDomainRedirect } = require('../../lib/checkers/domainChecker');
 
 describe('Domain Checker Utilities', () => {
 	describe('isSimilarDomainRedirect', () => {

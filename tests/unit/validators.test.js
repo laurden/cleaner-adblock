@@ -3,7 +3,7 @@
  */
 
 const path = require('path');
-const { validateFilePath, validateTestCount, validateConcurrency, validateTimeout, isValidDomain } = require('../../src/utils/validators');
+const { validateFilePath, validateTestCount, validateConcurrency, validateTimeout, isValidDomain } = require('../../lib/utils/validators');
 
 describe('Input Validation', () => {
 	describe('validateFilePath', () => {
@@ -15,6 +15,16 @@ describe('Input Validation', () => {
 		test('should accept valid paths with directories', () => {
 			const result = validateFilePath('data/filters.txt');
 			expect(result).toBe(path.normalize('data/filters.txt'));
+		});
+
+		test('should accept filenames with dashes', () => {
+			const result = validateFilePath('build/easylist-250.txt');
+			expect(result).toBe(path.normalize('build/easylist-250.txt'));
+		});
+
+		test('should accept filenames with multiple dashes and underscores', () => {
+			const result = validateFilePath('data/my-filter_list-v2.txt');
+			expect(result).toBe(path.normalize('data/my-filter_list-v2.txt'));
 		});
 
 		test('should reject path traversal attempts with ../', () => {
@@ -34,10 +44,11 @@ describe('Input Validation', () => {
 			expect(result).toBe(path.normalize('data/test.txt'));
 		});
 
-		test('should accept absolute paths within cwd', () => {
+		test('should reject absolute paths for security', () => {
 			const absolutePath = path.join(process.cwd(), 'test.txt');
-			const result = validateFilePath(absolutePath);
-			expect(result).toBe(absolutePath);
+			expect(() => {
+				validateFilePath(absolutePath);
+			}).toThrow('Absolute paths are not allowed for security reasons');
 		});
 	});
 
@@ -192,7 +203,7 @@ describe('Domain Validation', () => {
 		});
 
 		test('should accept domains at minimum length', () => {
-			expect(isValidDomain('a.b')).toBe(true); // Exactly MIN_DOMAIN_LENGTH (3)
+			expect(isValidDomain('a.bc')).toBe(true); // Exactly MIN_DOMAIN_LENGTH (4)
 		});
 	});
 });

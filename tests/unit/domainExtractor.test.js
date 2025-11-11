@@ -2,7 +2,7 @@
  * Unit tests for domain extraction utilities
  */
 
-const { extractDomains, getBaseDomain, isBareDomain, validateAndCleanDomain } = require('../../src/parsers/domainExtractor');
+const { extractDomains, getBaseDomain, isBareDomain, validateAndCleanDomain } = require('../../lib/parsers/domainExtractor');
 
 describe('Domain Utilities', () => {
 	describe('getBaseDomain', () => {
@@ -113,8 +113,10 @@ describe('Domain Extraction', () => {
 		});
 
 		test('should extract domains from network rules', () => {
+			// Path-based rule without ||, extracts from domain= parameter
 			expect(extractDomains('/ads.js$script,domain=network-test.com')).toEqual(['network-test.com']);
-			expect(extractDomains('||blocked.example.com^$script,domain=site1.com')).toEqual(['site1.com']);
+			// Network blocking rule with ||, extracts the blocked domain
+			expect(extractDomains('||blocked.example.com^$script,domain=site1.com')).toEqual(['blocked.example.com']);
 		});
 
 		test('should handle multi-domain rules', () => {
@@ -125,10 +127,10 @@ describe('Domain Extraction', () => {
 		});
 
 		test('should handle network rules with multiple domains', () => {
+			// Network blocking rule with ||, extracts the blocked domain (not the domain= parameter)
 			const result = extractDomains('||blocked.example.com^$script,domain=site1.com|site2.org');
-			expect(result).toHaveLength(2);
-			expect(result).toContain('site1.com');
-			expect(result).toContain('site2.org');
+			expect(result).toHaveLength(1);
+			expect(result).toContain('blocked.example.com');
 		});
 
 		test('should skip comments and empty lines', () => {

@@ -2,7 +2,7 @@
  * Unit tests for WWW variant handling
  */
 
-const { expandDomainsWithWww } = require('../../src/checkers/variants/wwwHandler');
+const { expandDomainsWithWww } = require('../../lib/checkers/variants/wwwHandler');
 
 describe('WWW Variant Handling', () => {
 	describe('expandDomainsWithWww', () => {

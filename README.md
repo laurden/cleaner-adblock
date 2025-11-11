@@ -1,15 +1,28 @@
-# Cleaner-Adblock
+### **This project is currently under development and not ready for production use.**  
+
+Several features and edge cases still require further refinement and testing.
+
+This repository represents a combination of the [ryanbr/cleaner-adblock](https://github.com/ryanbr/cleaner-adblock) project and a separate project independently developed by the author of this fork. It is **not** intended to compete with or replace the original project. 
+
+The goal of this effort is to **collaboratively enhance, extend and learn** from the existing work, encouraging community-driven improvement and maintaining the open-source spirit of shared development and knowledge.
+
+> [!IMPORTANT]
+> <sub>All content below this line is the [README](https://github.com/ryanbr/cleaner-adblock/blob/3bf15ffc7e35b4e9c9872b9a8afd003bbbbeb8c4/README.md) file of the upstream repository.  
+> It has been preserved for reference and attribution to the original author, [@ryanbr](https://github.com/ryanbr), without modification.  
+> _This **will change** in future commits to this repository._</sub>
+---
+## Minimal Domain Scanner
 
 A Node.js tool that scans adblock filter lists to identify dead domains and redirecting domains, helping maintain clean and efficient filter lists.
 
-## Overview
+### Overview
 
 This tool parses adblock filter lists, checks the status of domains found in various rule types, and categorizes them into:
 
 1. **Dead domains** - Domains that don't resolve or return errors (should be removed)
 2. **Redirecting domains** - Domains that redirect to different domains (should be reviewed)
 
-## Features
+### Features
 
 - **Multiple Rule Format Support**: Handles uBlock Origin, Adguard, and network rules
 - **Concurrent Processing**: Checks multiple domains simultaneously for speed
@@ -19,27 +32,27 @@ This tool parses adblock filter lists, checks the status of domains found in var
 - **Debug Modes**: Various debug levels for troubleshooting
 - **Test Mode**: Quick testing on a subset of domains
 
-## Installation
+### Installation
 
-### Prerequisites
+#### Prerequisites
 
 - Node.js (v14 or higher recommended)
 - npm (comes with Node.js)
 
-### Setup
+#### Setup
 
 ```bash
 # Clone or download the repository
 git clone <your-repo-url>
-cd cleaner-adblock
+cd <repo-directory>
 
 # Install dependencies
-npm install
+npm install puppeteer
 ```
 
-## Usage
+### Usage
 
-### Basic Usage
+#### Basic Usage
 
 ```bash
 node cleaner-adblock.js
@@ -47,22 +60,22 @@ node cleaner-adblock.js
 
 This will scan the default file (`easylist_specific_hide.txt`) and generate two output files.
 
-### Command-Line Options
+#### Command-Line Options
 
 ```bash
 node cleaner-adblock.js [options]
 ```
 
-#### Input Options
+##### Input Options
 
 - `--input=<file>` - Specify input file to scan (default: `easylist_specific_hide.txt`)
 
-#### Domain Checking Options
+##### Domain Checking Options
 
 - `--add-www` - Check both `domain.com` and `www.domain.com` for bare domains
 - `--ignore-similar` - Ignore redirects to subdomains of same base domain
 
-#### Debug Options
+##### Debug Options
 
 - `--debug` - Enable basic debug output
 - `--debug-verbose` - Enable verbose debug output
@@ -70,16 +83,16 @@ node cleaner-adblock.js [options]
 - `--debug-browser` - Log browser events
 - `--debug-all` - Enable all debug options
 
-#### Testing Options
+##### Testing Options
 
 - `--test-mode` - Only test first 5 domains (quick testing)
 - `--test-count=N` - Only test first N domains
 
-#### Help
+##### Help
 
 - `--help` or `-h` - Show help message
 
-### Examples
+#### Examples
 
 ```bash
 # Scan custom filter list
@@ -101,9 +114,9 @@ node cleaner-adblock.js --debug --test-mode
 node cleaner-adblock.js --debug-all --test-count=10
 ```
 
-## Supported Rule Types
+### Supported Rule Types
 
-### uBlock Origin / Cosmetic Rules
+#### uBlock Origin / Cosmetic Rules
 
 ```
 domain.com##.selector           # Element hiding
@@ -111,7 +124,7 @@ domain.com##+js(scriptlet)      # Scriptlet injection
 domain.com#@#.selector          # Exception rule
 ```
 
-### Adguard Rules
+#### Adguard Rules
 
 ```
 domain.com##selector            # Element hiding
@@ -123,7 +136,7 @@ domain.com#@$?#selector         # Extended CSS exception
 domain1.com,domain2.com##selector  # Multiple domains
 ```
 
-### Network Rules
+#### Network Rules
 
 ```
 /path$script,domain=example.com
@@ -132,9 +145,9 @@ domain1.com,domain2.com##selector  # Multiple domains
 
 Extracts domains from the `domain=` parameter.
 
-## Output Files
+### Output Files
 
-### `dead_domains.txt`
+#### `dead_domains.txt`
 
 Contains domains that should be **removed** from filter lists:
 
@@ -154,7 +167,7 @@ old-site.net # 404 Not Found
 timeout-site.org # Navigation timeout
 ```
 
-### `redirect_domains.txt`
+#### `redirect_domains.txt`
 
 Contains domains that **redirect** to different domains (review for potential rule updates):
 
@@ -168,7 +181,7 @@ old-domain.com → new-domain.com # https://new-domain.com/
 example.org → example.com # https://example.com/
 ```
 
-## How It Works
+### How It Works
 
 1. **Parse Input File**: Extracts unique domains from various filter rule formats
 2. **Validate Domains**: Filters out .onion domains, IP addresses, and localhost
@@ -182,68 +195,26 @@ example.org → example.com # https://example.com/
 5. **Categorize Results**: Separates dead domains from redirecting domains
 6. **Generate Reports**: Creates organized output files with explanations
 
-## Project Structure
+### Configuration
 
-The codebase is organized into modular components:
-
-```
-cleaner-adblock/
-├── src/
-│   ├── checkers/          # Domain checking logic
-│   │   ├── domainChecker.js
-│   │   └── variants/
-│   │       └── wwwHandler.js
-│   ├── cli.js             # Command-line argument parsing
-│   ├── config/            # Configuration system
-│   │   ├── config.js.example
-│   │   ├── defaults.js
-│   │   └── loader.js
-│   ├── index.js           # Main entry point
-│   ├── parsers/           # Domain extraction from filter rules
-│   │   ├── domainExtractor.js
-│   │   └── fileReader.js
-│   ├── utils/             # Utility functions
-│   │   ├── logger.js
-│   │   ├── progressBar.js
-│   │   └── validators.js
-│   └── writers/           # Output file generation
-│       ├── formatWriters.js
-│       └── reportWriter.js
-└── cleaner-adblock.js     # Entry point wrapper
-```
-
-## Configuration
-
-The project uses a modular configuration system. Configuration is managed through:
-
-1. **`src/config/config.js.example`** - Template configuration file
-2. **`src/config/config.js`** - Your local configuration (copy from example)
-3. **`src/config/defaults.js`** - Default values
-
-Default settings:
+Default settings (can be modified in the code):
 
 ```javascript
-TIMEOUT = 30000;              // Page load timeout (30 seconds)
-FORCE_CLOSE_TIMEOUT = 60000;  // Force-close timeout (60 seconds)
-CONCURRENCY = 12;             // Concurrent domain checks
+const TIMEOUT = 25000;              // Page load timeout (25 seconds)
+const FORCE_CLOSE_TIMEOUT = 60000;  // Force-close timeout (60 seconds)
+const CONCURRENCY = 12;              // Concurrent domain checks
 ```
 
-To customize configuration:
-```bash
-cp src/config/config.js.example src/config/config.js
-# Edit src/config/config.js with your preferences
-```
+### Special Features
 
-## Special Features
-
-### `--add-www` Behavior
+#### `--add-www` Behavior
 
 - `domain.com` → checks both `domain.com` AND `www.domain.com`
 - If **either** works, domain is marked as active
 - `sub.domain.com` → only checks `sub.domain.com` (no www added)
 - `www.domain.com` → only checks `www.domain.com` (already has www)
 
-### `--ignore-similar` Behavior
+#### `--ignore-similar` Behavior
 
 Reduces noise from internal subdomain redirects:
 
@@ -252,7 +223,7 @@ Reduces noise from internal subdomain redirects:
 
 Useful for sites that redirect to CDN or regional subdomains.
 
-## Error Handling
+### Error Handling
 
 The tool handles various error scenarios:
 
@@ -263,42 +234,48 @@ The tool handles various error scenarios:
 - Page load timeouts
 - Navigation errors
 
-## Troubleshooting
+### Troubleshooting
 
-### Issue: "Cannot find module 'puppeteer'"
+#### Issue: "Cannot find module 'puppeteer'"
 
 ```bash
 npm install puppeteer
 ```
 
-### Issue: Browser fails to launch
+#### Issue: Browser fails to launch
 
-The browser is configured with secure defaults. Check system requirements and ensure Chrome/Chromium dependencies are installed.
-
-### Issue: Too many timeouts
-
-Increase the timeout value in `src/config/config.js`:
+Try adding more Puppeteer args in the code:
 ```javascript
-TIMEOUT: 40000  // 40 seconds
+args: [
+  '--no-sandbox',
+  '--disable-setuid-sandbox',
+  '--disable-dev-shm-usage'
+]
 ```
 
-### Issue: Running out of memory
+#### Issue: Too many timeouts
 
-Reduce concurrency in `src/config/config.js`:
+Increase the timeout value:
 ```javascript
-CONCURRENCY: 6  // Lower concurrency
+const TIMEOUT = 35000; // 35 seconds
 ```
 
-## Performance Tips
+#### Issue: Running out of memory
+
+Reduce concurrency:
+```javascript
+const CONCURRENCY = 6; // Lower concurrency
+```
+
+### Performance Tips
 
 - Use `--test-mode` first to verify everything works
-- Adjust `CONCURRENCY` in `src/config/config.js` based on your system resources
+- Adjust `CONCURRENCY` based on your system resources
 - Use `--ignore-similar` to reduce false positives
 - Monitor system resources during large scans
 - Consider splitting very large filter lists
-- Use the modular structure to customize behavior for your needs
 
-## Use Cases
+### Use Cases
 
 - **Filter List Maintenance**: Identify outdated domains in adblock lists
 - **List Optimization**: Remove dead domains to reduce list size
@@ -306,11 +283,11 @@ CONCURRENCY: 6  // Lower concurrency
 - **Quality Assurance**: Validate filter lists before distribution
 - **Domain Research**: Analyze domain status across multiple filter lists
 
-## License
+### License
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+[Specify your license here]
 
-## Contributing
+### Contributing
 
 Contributions are welcome! Please:
 
@@ -319,10 +296,10 @@ Contributions are welcome! Please:
 3. Make your changes
 4. Submit a pull request
 
-## Acknowledgments
+### Acknowledgments
 
 Built with [Puppeteer](https://pptr.dev/) for reliable browser automation and domain checking.
 
-## Support
+### Support
 
 For issues, questions, or suggestions, please [open an issue](your-issue-tracker-url) on GitHub.

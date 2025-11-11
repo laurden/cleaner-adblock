@@ -1,13 +1,13 @@
 {
 	"name": "cleaner-adblock",
-	"version": "1.0.0-refactoring",
+	"version": "1.0.0-r",
 	"description": "Node.js utility for detecting dead and redirecting domains in adblock filters.",
-	"main": "src/index.js",
+	"main": "lib/main.js",
 	"bin": {
-		"cleaner-adblock": "./src/index.js"
+		"cleaner-adblock": "./lib/main.js"
 	},
 	"scripts": {
-		"start": "node src/index.js",
+		"start": "node lib/main.js",
 		"test": "jest",
 		"test:watch": "jest --watch",
 		"test:coverage": "jest --coverage",
@@ -32,7 +32,8 @@
 	"author": "ryanbr <rbrown@brave.com> (s://fanboy.co.nz/)",
 	"license": "GPL-3.0",
 	"dependencies": {
-		"cli-progress": "^3.12.0",
+		"joi": "^18.0.1",
+		"limiter": "^3.0.0",
 		"puppeteer": "^24.29.1"
 	},
 	"devDependencies": {
@@ -40,7 +41,7 @@
 		"eslint": "^9.39.1",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-prettier": "^5.5.4",
-		"jest": "^29.7.0",
+		"jest": "^30.2.0",
 		"prettier": "^3.6.2",
 		"typescript": "^5.9.3"
 	},

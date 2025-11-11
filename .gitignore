@@ -4,14 +4,11 @@
 # ssh and tell no one
 
 # build, coverage and dependencies, etc
-backup/
-build/
-coverage/
 node_modules/
 
-# clean-adblock: ignore all config files except the example
-**/config.js
-!**/config.js.example
+# clean-adblock: ignore all config files except the examples
+**/config.json
+!**/config.json.example
 
 # database, envpocalypse, init. configuration, logs and desktop services store
 *.db
@@ -24,6 +21,7 @@ node_modules/
 .vscode/
 
 # clean-adblock: user-generated files
-dead_domains.txt
-easylist_specific_hide.txt
-redirect_domains.txt
+example-list.txt
+ca-dead-domains.txt
+ca-redirect-domains.txt
+ca-inconclusive-domains.txt
