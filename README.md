@@ -1,4 +1,4 @@
-# Minimal Domain Scanner
+# Cleaner-Adblock
 
 A Node.js tool that scans adblock filter lists to identify dead domains and redirecting domains, helping maintain clean and efficient filter lists.
 
@@ -31,10 +31,10 @@ This tool parses adblock filter lists, checks the status of domains found in var
 ```bash
 # Clone or download the repository
 git clone <your-repo-url>
-cd <repo-directory>
+cd cleaner-adblock
 
 # Install dependencies
-npm install puppeteer
+npm install
 ```
 
 ## Usage
@@ -182,14 +182,56 @@ example.org → example.com # https://example.com/
 5. **Categorize Results**: Separates dead domains from redirecting domains
 6. **Generate Reports**: Creates organized output files with explanations
 
+## Project Structure
+
+The codebase is organized into modular components:
+
+```
+cleaner-adblock/
+├── src/
+│   ├── checkers/          # Domain checking logic
+│   │   ├── domainChecker.js
+│   │   └── variants/
+│   │       └── wwwHandler.js
+│   ├── cli.js             # Command-line argument parsing
+│   ├── config/            # Configuration system
+│   │   ├── config.js.example
+│   │   ├── defaults.js
+│   │   └── loader.js
+│   ├── index.js           # Main entry point
+│   ├── parsers/           # Domain extraction from filter rules
+│   │   ├── domainExtractor.js
+│   │   └── fileReader.js
+│   ├── utils/             # Utility functions
+│   │   ├── logger.js
+│   │   ├── progressBar.js
+│   │   └── validators.js
+│   └── writers/           # Output file generation
+│       ├── formatWriters.js
+│       └── reportWriter.js
+└── cleaner-adblock.js     # Entry point wrapper
+```
+
 ## Configuration
 
-Default settings (can be modified in the code):
+The project uses a modular configuration system. Configuration is managed through:
+
+1. **`src/config/config.js.example`** - Template configuration file
+2. **`src/config/config.js`** - Your local configuration (copy from example)
+3. **`src/config/defaults.js`** - Default values
+
+Default settings:
 
 ```javascript
-const TIMEOUT = 25000;              // Page load timeout (25 seconds)
-const FORCE_CLOSE_TIMEOUT = 60000;  // Force-close timeout (60 seconds)
-const CONCURRENCY = 12;              // Concurrent domain checks
+TIMEOUT = 30000;              // Page load timeout (30 seconds)
+FORCE_CLOSE_TIMEOUT = 60000;  // Force-close timeout (60 seconds)
+CONCURRENCY = 12;             // Concurrent domain checks
+```
+
+To customize configuration:
+```bash
+cp src/config/config.js.example src/config/config.js
+# Edit src/config/config.js with your preferences
 ```
 
 ## Special Features
@@ -231,36 +273,30 @@ npm install puppeteer
 
 ### Issue: Browser fails to launch
 
-Try adding more Puppeteer args in the code:
-```javascript
-args: [
-  '--no-sandbox',
-  '--disable-setuid-sandbox',
-  '--disable-dev-shm-usage'
-]
-```
+The browser is configured with secure defaults. Check system requirements and ensure Chrome/Chromium dependencies are installed.
 
 ### Issue: Too many timeouts
 
-Increase the timeout value:
+Increase the timeout value in `src/config/config.js`:
 ```javascript
-const TIMEOUT = 35000; // 35 seconds
+TIMEOUT: 40000  // 40 seconds
 ```
 
 ### Issue: Running out of memory
 
-Reduce concurrency:
+Reduce concurrency in `src/config/config.js`:
 ```javascript
-const CONCURRENCY = 6; // Lower concurrency
+CONCURRENCY: 6  // Lower concurrency
 ```
 
 ## Performance Tips
 
 - Use `--test-mode` first to verify everything works
-- Adjust `CONCURRENCY` based on your system resources
+- Adjust `CONCURRENCY` in `src/config/config.js` based on your system resources
 - Use `--ignore-similar` to reduce false positives
 - Monitor system resources during large scans
 - Consider splitting very large filter lists
+- Use the modular structure to customize behavior for your needs
 
 ## Use Cases
 
@@ -272,7 +308,7 @@ const CONCURRENCY = 6; // Lower concurrency
 
 ## License
 
-[Specify your license here]
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
