@@ -4,13 +4,12 @@
  * Main entry point
  */
 
-const fs = require('fs');
 const puppeteer = require('puppeteer');
 const { parseArgs, showHelp } = require('./cli');
 const { configure: configureLogger } = require('./utils/logger');
 const { parseDomainsFromFile } = require('./parsers/fileReader');
 const { expandDomainsWithWww, processDomains } = require('./checkers/domainChecker');
-const { DEAD_DOMAINS_FILE, REDIRECT_DOMAINS_FILE } = require('./config/defaults');
+const { writeDeadDomains, writeRedirectDomains } = require('./writers/reportWriter');
 
 /**
  * Main application logic
@@ -147,7 +146,7 @@ async function main() {
 	// Launch browser
 	browser = await puppeteer.launch({
 		headless: true,
-		ignoreHTTPSErrors: true,
+		acceptInsecureCerts: true,
 		args: [
 			'--no-sandbox',
 			'--disable-setuid-sandbox',
@@ -194,17 +193,16 @@ async function main() {
 		console.log(`Active (no issues): ${statistics.activeCount}`);
 	}
 
-	// Write results to files (basic implementation - will be enhanced in Commit 7)
+	// Write results to files
 	if (deadDomains.length > 0) {
-		const timestamp = new Date().toISOString();
-		let output = `# Dead/Non-existent Domains - ${timestamp}\n`;
-		output += `# These domains should be removed from the filter list\n\n`;
-		for (const { domain, reason } of deadDomains) {
-			output += `${domain}  # ${reason}\n`;
-		}
-		await fs.promises.writeFile(DEAD_DOMAINS_FILE, output, 'utf8');
+		await writeDeadDomains(deadDomains, {
+			format: config.outputFormat || 'text',
+			includeTimestamp: config.includeTimestamp !== false,
+			outputStatistics: config.outputStatistics,
+			statistics: statistics,
+			quietMode: config.quietMode,
+		});
 		if (!config.quietMode) {
-			console.log(`\n✓ Written ${deadDomains.length} dead domains to ${DEAD_DOMAINS_FILE}`);
 			console.log(`💡 Tip: Remove these ${deadDomains.length} dead domains from your filter list`);
 		}
 	} else {
@@ -214,15 +212,14 @@ async function main() {
 	}
 
 	if (redirectDomains.length > 0) {
-		const timestamp = new Date().toISOString();
-		let output = `# Redirecting Domains - ${timestamp}\n`;
-		output += `# These domains redirect to different domains - review before making changes\n\n`;
-		for (const { domain, finalDomain, finalUrl } of redirectDomains) {
-			output += `${domain} → ${finalDomain}  # ${finalUrl}\n`;
-		}
-		await fs.promises.writeFile(REDIRECT_DOMAINS_FILE, output, 'utf8');
+		await writeRedirectDomains(redirectDomains, {
+			format: config.outputFormat || 'text',
+			includeTimestamp: config.includeTimestamp !== false,
+			outputStatistics: config.outputStatistics,
+			statistics: statistics,
+			quietMode: config.quietMode,
+		});
 		if (!config.quietMode) {
-			console.log(`✓ Written ${redirectDomains.length} redirecting domains to ${REDIRECT_DOMAINS_FILE}`);
 			console.log(`💡 Tip: Review these ${redirectDomains.length} redirecting domains - they may need rule updates`);
 		}
 	} else {
