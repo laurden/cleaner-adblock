@@ -9,6 +9,10 @@ build/
 coverage/
 node_modules/
 
+# clean-adblock: ignore all config files except the example
+**/config.js
+!**/config.js.example
+
 # database, envpocalypse, init. configuration, logs and desktop services store
 *.db
 .env
@@ -19,7 +23,7 @@ node_modules/
 # editor settings (don't tell your boss you use vscode)
 .vscode/
 
-# clean-adblock files
+# clean-adblock: user-generated files
 dead_domains.txt
 easylist_specific_hide.txt
 redirect_domains.txt
