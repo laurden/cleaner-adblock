@@ -1,0 +1,26 @@
+! Sample filter rules for testing
+! uBlock Origin cosmetic rules
+example.com##.ad-banner
+test-site.net##.popup
+subdomain.example.org##.tracker
+
+! Adguard rules
+adguard-test.com##selector
+multi-domain.com,another-domain.net##.ads
+css-inject.org#$#.custom-style
+
+! Network rules
+/ads.js$script,domain=network-test.com
+||blocked.example.com^$script,domain=site1.com|site2.org
+
+! Exception rules
+whitelist.com#@#.allowed
+
+! Invalid patterns (should be ignored)
+*.wildcard.com##.ad
+~negated.com##.ad
+.onion-site.onion##.tracker
+192.168.1.1##.local
+
+! Scriptlet rules
+scriptlet-site.com##+js(abort-on-property-read)
