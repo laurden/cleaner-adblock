@@ -879,9 +879,15 @@ function writeRedirectDomains(redirectDomains) {
       '--ignore-certificate-errors-spki-list'
     ]
   });
-  
+
+  // validate browser launched successfully
+  if (!browser || typeof browser.newPage !== 'function') {
+    console.error('\n✗ Error: failed to launch browser.');
+    process.exit(1);
+  }
+
   debugBrowser('Browser launched successfully');
-  
+
   console.log('Browser launched. Starting domain checks...\n');
   
   const results = await processDomains(browser, domainObjects);
