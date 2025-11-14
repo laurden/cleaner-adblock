@@ -54,7 +54,7 @@ let TEST_COUNT = 5; // Number of domains to test in test mode
 
 for (const arg of args) {
   if (arg.startsWith('--input=')) {
-    INPUT_FILE = arg.split('=')[1];
+    INPUT_FILE = arg.split('=')[1] || 'easylist_specific_hide.txt';
   } else if (arg === '--add-www') {
     ADD_WWW = true;
   } else if (arg === '--ignore-similar') {
@@ -785,9 +785,14 @@ function writeDeadDomains(deadDomains) {
   for (const item of deadDomains) {
     lines.push(`${item.domain} # ${item.reason}`);
   }
-  
-  fs.writeFileSync(DEAD_DOMAINS_FILE, lines.join('\n'), 'utf8');
-  console.log(`\n? Dead domains written to ${DEAD_DOMAINS_FILE}`);
+
+  try {
+    fs.writeFileSync(DEAD_DOMAINS_FILE, lines.join('\n'), 'utf8');
+    console.log(`\n? Dead domains written to ${DEAD_DOMAINS_FILE}`);
+  } catch (error) {
+    console.error(`\n✗ Error writing to ${DEAD_DOMAINS_FILE}: ${error.message}`);
+    process.exit(1);
+  }
 }
 
 // Write redirect domains to file
@@ -807,9 +812,14 @@ function writeRedirectDomains(redirectDomains) {
   for (const item of redirectDomains) {
     lines.push(`${item.domain} ? ${item.finalDomain} # ${item.finalUrl}`);
   }
-  
-  fs.writeFileSync(REDIRECT_DOMAINS_FILE, lines.join('\n'), 'utf8');
-  console.log(`? Redirect domains written to ${REDIRECT_DOMAINS_FILE}`);
+
+  try {
+    fs.writeFileSync(REDIRECT_DOMAINS_FILE, lines.join('\n'), 'utf8');
+    console.log(`? Redirect domains written to ${REDIRECT_DOMAINS_FILE}`);
+  } catch (error) {
+    console.error(`\n✗ Error writing to ${REDIRECT_DOMAINS_FILE}: ${error.message}`);
+    process.exit(1);
+  }
 }
 
 // Main execution
@@ -836,9 +846,9 @@ function writeRedirectDomains(redirectDomains) {
   try {
     domains = parseDomainsFromFile(INPUT_FILE);
   } catch (error) {
-    console.error(`\n? Error: ${error.message}`);
+    console.error(`\n✗ Error: ${error.message}`);
     console.log(`\nTip: Use --input=<file> to specify a different input file`);
-    console.log(`Example: node nwss_minimal.js --input=my_rules.txt\n`);
+    console.log(`Example: node cleaner-adblock.js --input=my_rules.txt\n`);
     process.exit(1);
   }
   
