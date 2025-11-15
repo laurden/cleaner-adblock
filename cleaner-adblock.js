@@ -54,7 +54,7 @@ let TEST_COUNT = 5; // Number of domains to test in test mode
 
 for (const arg of args) {
   if (arg.startsWith('--input=')) {
-    INPUT_FILE = arg.split('=')[1];
+    INPUT_FILE = arg.split('=')[1] || 'easylist_specific_hide.txt';
   } else if (arg === '--add-www') {
     ADD_WWW = true;
   } else if (arg === '--ignore-similar') {
@@ -80,7 +80,8 @@ for (const arg of args) {
   } else if (arg === '--test-mode') {
     TEST_MODE = true;
   } else if (arg.startsWith('--test-count=')) {
-    TEST_COUNT = parseInt(arg.split('=')[1]) || 5;
+    const parsed = parseInt(arg.split('=')[1], 10);
+    TEST_COUNT = Math.max(1, isNaN(parsed) ? 5 : parsed);
     TEST_MODE = true;
   }
 }
@@ -96,7 +97,7 @@ Purpose:
   2. redirect_domains.txt - Domains that redirect (review these)
 
 Usage:
-  node nwss_minimal.js [options]
+  node cleaner-adblock.js [options]
 
 Options:
   --input=<file>        Input file to scan (default: easylist_specific_hide.txt)
@@ -124,13 +125,13 @@ Ignored Domains:
     ];
 
 Examples:
-  node cleanup-site-debug.js
-  node cleanup-site-debug.js --input=my_rules.txt
-  node cleanup-site-debug.js --add-www
-  node cleanup-site-debug.js --input=my_rules.txt --add-www --ignore-similar
-  node cleanup-site-debug.js --debug --test-mode
-  node cleanup-site-debug.js --debug-all --test-count=10
-  node cleanup-site-debug.js --debug-network
+  node cleaner-adblock.js
+  node cleaner-adblock.js --input=my_rules.txt
+  node cleaner-adblock.js --add-www
+  node cleaner-adblock.js --input=my_rules.txt --add-www --ignore-similar
+  node cleaner-adblock.js --debug --test-mode
+  node cleaner-adblock.js --debug-all --test-count=10
+  node cleaner-adblock.js --debug-network
 
 Supported Rule Types:
   Cosmetic/Element Hiding (uBlock Origin):
@@ -210,6 +211,9 @@ try {
   multiTLDs = new Set(['co.uk', 'com.nz', 'com.au', 'co.za', 'com.br']);
 }
 
+const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+const domainCharPattern = /^[a-z0-9.-]+$/;
+
 // Debug logging functions
 function debugLog(message, level = 'DEBUG') {
   if (DEBUG) {
@@ -236,41 +240,32 @@ function debugBrowser(message) {
   }
 }
 
-// Check if domain is valid (not .onion or IP address)
+// check if a domain is valid
 function isValidDomain(domain) {
-  // Skip .onion domains (Tor hidden services)
-  if (domain.endsWith('.onion')) {
-    return false;
-  }
+  if (!domain) return false;
   
-  // Skip IP addresses (IPv4)
-  // Pattern: 0-255.0-255.0-255.0-255
-  const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
-  if (ipv4Pattern.test(domain)) {
-    return false;
-  }
+  if (!domain.includes('.')) return false; // blocks "abc123" and "localhost"
+  if (domain.includes(':')) return false; // ipv6-like (contains :)
   
-  // Skip IPv6 addresses (simplified check)
-  // Contains colons which are not valid in domain names
-  if (domain.includes(':')) {
-    return false;
-  }
+  const lower = domain.toLowerCase();
   
-  // Skip localhost
-  if (domain === 'localhost' || domain === '127.0.0.1') {
-    return false;
-  }
-  
+  if (lower.endsWith('.onion')) return false; // .onion domains
+  if (ipv4Pattern.test(lower)) return false; // ipv4
+  if (!domainCharPattern.test(lower)) return false; // non-domain-safe characters
+
   return true;
 }
 
-// Safely truncate error message without cutting off mid-word
+
 function truncateError(message, maxLength = 120) {
-  if (message.length <= maxLength) {
-    return message;
-  }
-  // Truncate and add ellipsis
-  return message.substring(0, maxLength) + '...';
+  // validate and sanitise inputs
+  const msg = String(message || 'Unknown error');
+  const parsedLength = Math.floor(Number(maxLength));
+  const safeMaxLength = isNaN(parsedLength) || parsedLength <= 0 ? 120 : parsedLength;
+
+  if (msg.length <= safeMaxLength) return msg;
+  // truncate and add ellipsis (total length = maxLength inc. "...")
+  return msg.substring(0, safeMaxLength - 3) + '...';
 }
 
 // Extract base domain (handles subdomains and multi-label TLDs)
@@ -504,24 +499,9 @@ async function checkDomain(browser, domainObj, index, total) {
     await page.setUserAgent(USER_AGENT);
     debugBrowser(`Set user agent: ${USER_AGENT}`);
     
-    // Add network event listeners for debugging
-    if (DEBUG_NETWORK) {
-      page.on('request', request => {
-        debugNetwork(`Request: ${request.method()} ${request.url()}`);
-      });
-      
-      page.on('response', response => {
-        debugNetwork(`Response: ${response.status()} ${response.url()}`);
-      });
-      
-      page.on('requestfailed', request => {
-        debugNetwork(`Request failed: ${request.url()} - ${request.failure().errorText}`);
-      });
-    }
-    
     let forceCloseTimer = null;
     let pageClosed = false;
-    
+
     const forceClosePage = async () => {
       if (!pageClosed) {
         console.log(`  ? Force-closing ${variant} after ${FORCE_CLOSE_TIMEOUT / 1000}s timeout`);
@@ -533,9 +513,9 @@ async function checkDomain(browser, domainObj, index, total) {
         }
       }
     };
-    
+
     forceCloseTimer = setTimeout(forceClosePage, FORCE_CLOSE_TIMEOUT);
-    
+
     try {
       const url = `https://${variant}`;
       if (i === 0) {
@@ -543,13 +523,30 @@ async function checkDomain(browser, domainObj, index, total) {
       } else {
         console.log(`  ? Trying www.${domain}...`);
       }
-      
+
       let statusCode = null;
-      
+
+      // add network event listeners for debugging
+      if (DEBUG_NETWORK) {
+        page.on('request', request => {
+          debugNetwork(`Request: ${request.method()} ${request.url()}`);
+        });
+
+        page.on('requestfailed', request => {
+          debugNetwork(`Request failed: ${request.url()} - ${request.failure().errorText}`);
+        });
+      }
+
+      // single consolidated response listener
       page.on('response', response => {
-        if (response.url() === url || response.url() === url + '/') {
+        const responseUrl = response.url();
+        const isMainResponse = responseUrl === url || responseUrl === url + '/';
+
+        if (isMainResponse) {
           statusCode = response.status();
-          debugNetwork(`Main response received: ${statusCode} for ${response.url()}`);
+          debugNetwork(`Main response received: ${statusCode} for ${responseUrl}`);
+        } else if (DEBUG_NETWORK) {
+          debugNetwork(`Response: ${response.status()} ${responseUrl}`);
         }
       });
       
@@ -812,9 +809,14 @@ function writeDeadDomains(deadDomains) {
   for (const item of deadDomains) {
     lines.push(`${item.domain} # ${item.reason}`);
   }
-  
-  fs.writeFileSync(DEAD_DOMAINS_FILE, lines.join('\n'), 'utf8');
-  console.log(`\n? Dead domains written to ${DEAD_DOMAINS_FILE}`);
+
+  try {
+    fs.writeFileSync(DEAD_DOMAINS_FILE, lines.join('\n'), 'utf8');
+    console.log(`\n? Dead domains written to ${DEAD_DOMAINS_FILE}`);
+  } catch (error) {
+    console.error(`\n✗ Error writing to ${DEAD_DOMAINS_FILE}: ${error.message}`);
+    process.exit(1);
+  }
 }
 
 // Write redirect domains to file
@@ -834,9 +836,14 @@ function writeRedirectDomains(redirectDomains) {
   for (const item of redirectDomains) {
     lines.push(`${item.domain} ? ${item.finalDomain} # ${item.finalUrl}`);
   }
-  
-  fs.writeFileSync(REDIRECT_DOMAINS_FILE, lines.join('\n'), 'utf8');
-  console.log(`? Redirect domains written to ${REDIRECT_DOMAINS_FILE}`);
+
+  try {
+    fs.writeFileSync(REDIRECT_DOMAINS_FILE, lines.join('\n'), 'utf8');
+    console.log(`? Redirect domains written to ${REDIRECT_DOMAINS_FILE}`);
+  } catch (error) {
+    console.error(`\n✗ Error writing to ${REDIRECT_DOMAINS_FILE}: ${error.message}`);
+    process.exit(1);
+  }
 }
 
 // Main execution
@@ -863,9 +870,9 @@ function writeRedirectDomains(redirectDomains) {
   try {
     domains = parseDomainsFromFile(INPUT_FILE);
   } catch (error) {
-    console.error(`\n? Error: ${error.message}`);
+    console.error(`\n✗ Error: ${error.message}`);
     console.log(`\nTip: Use --input=<file> to specify a different input file`);
-    console.log(`Example: node nwss_minimal.js --input=my_rules.txt\n`);
+    console.log(`Example: node cleaner-adblock.js --input=my_rules.txt\n`);
     process.exit(1);
   }
   
@@ -912,9 +919,15 @@ function writeRedirectDomains(redirectDomains) {
       '--ignore-certificate-errors-spki-list'
     ]
   });
-  
+
+  // validate browser launched successfully
+  if (!browser || typeof browser.newPage !== 'function') {
+    console.error('\n✗ Error: failed to launch browser.');
+    process.exit(1);
+  }
+
   debugBrowser('Browser launched successfully');
-  
+
   console.log('Browser launched. Starting domain checks...\n');
   
   const results = await processDomains(browser, domainObjects);
